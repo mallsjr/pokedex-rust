@@ -11,4 +11,5 @@ egui = "0.22.0"
 reqwest = { version = "0.11.18", features = ["json", "blocking"] }
 serde = { version = "1.0.171", features = ["derive"] }
 serde_json = "1.0.103"
+url = { version = "2.4.0", features = ["serde"] }
 # tokio = { version = "1.29.1", features = ["full"] } // use if want async await syntax
