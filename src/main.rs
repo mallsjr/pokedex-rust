@@ -3,6 +3,7 @@ use std::io::Write;
 
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use url::Url;
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Pokemon {
@@ -29,46 +30,38 @@ fn main() {
         pokemon
             .iter_mut()
             .enumerate()
-            .take(4)
+            .take(1)
             .for_each(|(i, poke)| {
-                println!("getting sprite url for #{}-{}", i, poke.name);
+                println!("getting sprite url for #{}-{}", i + 1, poke.name);
 
                 let sprite: serde_json::Value =
                     reqwest::blocking::get(&poke.url).unwrap().json().unwrap();
 
-                let sprite_url = json!(sprite["sprites"]["front_default"]).to_string();
+                let sprite_url = sprite["sprites"]["front_default"].as_str();
+                poke.sprite = Some(sprite_url.unwrap().to_string());
 
-                poke.sprite = Some(sprite_url);
+                // println!("{}", sprite_url.unwrap());
+
+                let url = Url::parse(sprite_url.unwrap()).unwrap();
+
+                let res = reqwest::blocking::get(url);
+                let bytes = res.unwrap().bytes().unwrap();
+                // println!("{:?}", bytes);
+
+                println!("saving sprite for #{}-{}", i + 1, poke.name);
+
+                let image_path = format!("images/image{}.png", i + 1);
+                let mut file = File::create(image_path).unwrap();
+                file.write_all(&bytes).unwrap();
             });
 
         // todo!("write data to json file");
 
-        // let pokemon_string = serde_json::to_string(&pokemon).unwrap();
+        let pokemon_string = serde_json::to_string(&pokemon).unwrap();
 
-        // let path = "pokemon.json";
+        let path = "pokemon.json";
 
-        // let mut output = File::create(path).unwrap();
-        // write!(output, "{pokemon_string}").unwrap();
-
-        // todo!("Save images");
-        pokemon.iter().enumerate().for_each(|(i, poke)| {
-            println!("saving image {} for {}", i, poke.name);
-
-            // let path = format!("image{}.png", i);
-
-            match &poke.sprite {
-                Some(u) => {
-                    let url = format!("{}", u);
-
-                    println!("{}", url);
-
-                    // let mut file = std::fs::File::create(path).unwrap();
-                    let res = reqwest::blocking::get(url);
-                    let bytes = res.unwrap().bytes().unwrap();
-                    println!("{:?}", bytes);
-                }
-                None => println!("There is no sprite"),
-            };
-        });
+        let mut output = File::create(path).unwrap();
+        write!(output, "{pokemon_string}").unwrap();
     }
 }
