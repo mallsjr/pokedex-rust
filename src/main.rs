@@ -1,9 +1,11 @@
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::Write;
 
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use url::Url;
+
+use egui::Vec2;
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Pokemon {
@@ -12,10 +14,18 @@ struct Pokemon {
     sprite: Option<String>,
 }
 
-fn main() {
-    // todo!("try to read json file if it does not exist call api then store");
+fn main() -> eframe::Result<()> {
+    // read json file into memory
+    let mut pokemon: Vec<Pokemon>;
     if std::path::Path::new("pokemon.json").exists() {
         println!("File exists");
+
+        let contents =
+            fs::read_to_string("pokemon.json").expect("Should have been able to read the file");
+
+        pokemon = serde_json::from_str(&contents).unwrap();
+
+        // println!("{:?}", pokemon);
     } else {
         let res: serde_json::Value =
             reqwest::blocking::get("https://pokeapi.co/api/v2/pokemon?limit=151&offset=0")
@@ -25,7 +35,7 @@ fn main() {
 
         let json = json!(res["results"]);
 
-        let mut pokemon: Vec<Pokemon> = serde_json::from_value(json).unwrap();
+        pokemon = serde_json::from_value(json).unwrap();
 
         pokemon.iter_mut().enumerate().for_each(|(i, poke)| {
             println!("getting sprite url for #{}-{}", i + 1, poke.name);
@@ -56,5 +66,35 @@ fn main() {
         let path = "pokemon.json";
         let mut output = File::create(path).unwrap();
         write!(output, "{pokemon_string}").unwrap();
+    }
+
+    // Create egui screen and pass in pokemon
+
+    let native_options = eframe::NativeOptions {
+        initial_window_size: Some(Vec2::new(1400.0, 825.0)),
+        ..Default::default()
+    };
+    eframe::run_native(
+        "Match Game",
+        native_options,
+        Box::new(|cc| Box::new(App::new(cc, pokemon))),
+    )
+}
+
+struct App {
+    pokemon: Vec<Pokemon>,
+}
+
+impl App {
+    fn new(_cc: &eframe::CreationContext<'_>, pokemon: Vec<Pokemon>) -> Self {
+        Self { pokemon }
+    }
+}
+
+impl eframe::App for App {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.label("Hello World");
+        });
     }
 }
