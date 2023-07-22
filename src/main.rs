@@ -1,11 +1,12 @@
 use std::fs::{self, File};
 use std::io::Write;
 
+use egui::emath::RectTransform;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use url::Url;
 
-use egui::Vec2;
+use egui::{Color32, FontId, Pos2, Rect, RichText, Rounding, Stroke, Vec2};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Pokemon {
@@ -71,11 +72,11 @@ fn main() -> eframe::Result<()> {
     // Create egui screen and pass in pokemon
 
     let native_options = eframe::NativeOptions {
-        initial_window_size: Some(Vec2::new(1400.0, 825.0)),
+        initial_window_size: Some(Vec2::new(1024.0, 700.0)),
         ..Default::default()
     };
     eframe::run_native(
-        "Match Game",
+        "Pokedex",
         native_options,
         Box::new(|cc| Box::new(App::new(cc, pokemon))),
     )
@@ -94,7 +95,41 @@ impl App {
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.label("Hello World");
+            ui.vertical_centered_justified(|ui| {
+                ui.heading(RichText::new("Pokedex").strong().size(50.0));
+            });
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                ui.horizontal_wrapped(|ui| {
+                    for i in 0..self.pokemon.len() {
+                        let (_, rect) = ui.allocate_space(egui::vec2(150.0, 250.0));
+                        ui.painter().rect(
+                            rect,
+                            Rounding::from(5.0),
+                            Color32::TRANSPARENT,
+                            Stroke::new(1.0, Color32::WHITE),
+                        );
+
+                        // Get the relative position of our "canvas"
+                        let to_screen = RectTransform::from_to(
+                            Rect::from_min_size(Pos2::ZERO, rect.size()),
+                            rect,
+                        );
+
+                        // Create an absolute point
+                        let point = Pos2 { x: 75.0, y: 125.0 };
+                        // Make the absolute point relative to the "canvas" container
+                        let point_in_screen = to_screen.transform_pos(point);
+
+                        ui.painter_at(rect).text(
+                            point_in_screen,
+                            egui::Align2::CENTER_CENTER,
+                            &self.pokemon[i].name,
+                            FontId::monospace(20.0),
+                            Color32::WHITE,
+                        );
+                    }
+                });
+            });
         });
     }
 }
