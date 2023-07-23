@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use url::Url;
 
-use egui::{Color32, FontId, Pos2, Rect, RichText, Rounding, Stroke, Vec2};
+use egui::{pos2, Color32, FontId, Pos2, Rect, RichText, Rounding, Stroke, Vec2};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Pokemon {
@@ -100,7 +100,16 @@ impl eframe::App for App {
             });
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.horizontal_wrapped(|ui| {
+                    ui.spacing_mut().item_spacing = Vec2::new(25.0, 25.0);
                     for i in 0..self.pokemon.len() {
+                        let image_name = format!("image{}.png", i);
+
+                        let texture: egui::TextureHandle = ui.ctx().load_texture(
+                            image_name,
+                            egui::ColorImage::example(),
+                            Default::default(),
+                        );
+
                         let (_, rect) = ui.allocate_space(egui::vec2(150.0, 250.0));
                         ui.painter().rect(
                             rect,
@@ -115,13 +124,21 @@ impl eframe::App for App {
                             rect,
                         );
 
-                        // Create an absolute point
-                        let point = Pos2 { x: 75.0, y: 230.0 };
+                        // Create an absolute point for name
+                        let name_point = Pos2 { x: 75.0, y: 230.0 };
+
                         // Make the absolute point relative to the "canvas" container
-                        let point_in_screen = to_screen.transform_pos(point);
+                        let name_point_in_screen = to_screen.transform_pos(name_point);
+
+                        ui.painter_at(rect).image(
+                            texture.id(),
+                            rect,
+                            Rect::from_two_pos(pos2(0.0, 0.0), pos2(1.0, 1.0)),
+                            Color32::WHITE,
+                        );
 
                         ui.painter_at(rect).text(
-                            point_in_screen,
+                            name_point_in_screen,
                             egui::Align2::CENTER_CENTER,
                             &self.pokemon[i].name,
                             FontId::monospace(20.0),
