@@ -116,7 +116,7 @@ impl eframe::App for App {
                         );
 
                         // Create an absolute point
-                        let point = Pos2 { x: 75.0, y: 125.0 };
+                        let point = Pos2 { x: 75.0, y: 230.0 };
                         // Make the absolute point relative to the "canvas" container
                         let point_in_screen = to_screen.transform_pos(point);
 
