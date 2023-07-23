@@ -1,5 +1,6 @@
 use std::fs::{self, File};
 use std::io::Write;
+use std::path::Path;
 
 use egui::emath::RectTransform;
 use serde::{Deserialize, Serialize};
@@ -102,13 +103,14 @@ impl eframe::App for App {
                 ui.horizontal_wrapped(|ui| {
                     ui.spacing_mut().item_spacing = Vec2::new(25.0, 25.0);
                     for i in 0..self.pokemon.len() {
-                        let image_name = format!("image{}.png", i);
+                        let image_name = format!("image{}.png", i + 1);
 
-                        let texture: egui::TextureHandle = ui.ctx().load_texture(
-                            image_name,
-                            egui::ColorImage::example(),
-                            Default::default(),
-                        );
+                        let path = Path::new("").join("images").join(&image_name);
+
+                        let image = load_image_from_path(&path).unwrap();
+
+                        let texture: egui::TextureHandle =
+                            ui.ctx().load_texture(image_name, image, Default::default());
 
                         let (_, rect) = ui.allocate_space(egui::vec2(150.0, 250.0));
                         ui.painter().rect(
@@ -149,4 +151,15 @@ impl eframe::App for App {
             });
         });
     }
+}
+
+fn load_image_from_path(path: &std::path::Path) -> Result<egui::ColorImage, image::ImageError> {
+    let image = image::io::Reader::open(path)?.decode()?;
+    let size = [image.width() as _, image.height() as _];
+    let image_buffer = image.to_rgba8();
+    let pixels = image_buffer.as_flat_samples();
+    Ok(egui::ColorImage::from_rgba_unmultiplied(
+        size,
+        pixels.as_slice(),
+    ))
 }
