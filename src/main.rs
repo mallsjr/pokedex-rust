@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use url::Url;
 
-use egui::{pos2, Color32, FontId, Pos2, Rect, RichText, Rounding, Stroke, Vec2};
+use egui::{pos2, Color32, FontId, Pos2, Rect, RichText, Rounding, Stroke, TextureHandle, Vec2};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Pokemon {
@@ -85,11 +85,28 @@ fn main() -> eframe::Result<()> {
 
 struct App {
     pokemon: Vec<Pokemon>,
+    images: Vec<TextureHandle>,
 }
 
 impl App {
-    fn new(_cc: &eframe::CreationContext<'_>, pokemon: Vec<Pokemon>) -> Self {
-        Self { pokemon }
+    fn new(cc: &eframe::CreationContext<'_>, pokemon: Vec<Pokemon>) -> Self {
+        let mut images: Vec<TextureHandle> = Vec::new();
+        //TODO: Figure out how to load images on initial creation of app
+        pokemon.iter().enumerate().for_each(|(i, _poke)| {
+            let image_name = format!("image{}.png", i + 1);
+            let path = Path::new("").join("images").join(&image_name);
+            let image = load_image_from_path(&path).unwrap();
+
+            //TODO: Figure out how to then convert into textures
+            let texture: egui::TextureHandle =
+                cc.egui_ctx
+                    .load_texture(image_name, image, Default::default());
+
+            images.push(texture);
+        });
+
+        //TODO: Put image textures into an vector to be used by update method
+        Self { pokemon, images }
     }
 }
 
@@ -103,14 +120,14 @@ impl eframe::App for App {
                 ui.horizontal_wrapped(|ui| {
                     ui.spacing_mut().item_spacing = Vec2::new(25.0, 25.0);
                     for i in 0..self.pokemon.len() {
-                        let image_name = format!("image{}.png", i + 1);
+                        //The below of loading the email might be expensive which hurts scrolling
+                        // let image_name = format!("image{}.png", i + 1);
+                        // let path = Path::new("").join("images").join(&image_name);
+                        // let image = load_image_from_path(&path).unwrap();
 
-                        let path = Path::new("").join("images").join(&image_name);
-
-                        let image = load_image_from_path(&path).unwrap();
-
-                        let texture: egui::TextureHandle =
-                            ui.ctx().load_texture(image_name, image, Default::default());
+                        //This also could be very expensive which is why they say to do once
+                        // let texture: egui::TextureHandle =
+                        //     ui.ctx().load_texture(image_name, image, Default::default());
 
                         let (_, rect) = ui.allocate_space(egui::vec2(150.0, 250.0));
                         ui.painter().rect(
@@ -133,7 +150,7 @@ impl eframe::App for App {
                         let name_point_in_screen = to_screen.transform_pos(name_point);
 
                         ui.painter_at(rect).image(
-                            texture.id(),
+                            self.images[i].id(),
                             rect,
                             Rect::from_two_pos(pos2(0.0, 0.0), pos2(1.0, 1.0)),
                             Color32::WHITE,
